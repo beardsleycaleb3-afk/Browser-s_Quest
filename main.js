@@ -1,4 +1,4 @@
-// BROWSER'S QUEST - MOBILE BINARY MAX (COMPLETE)
+// Browser-s_Quest
 const W = 300, H = 300;
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
