@@ -71,7 +71,7 @@
     <div id="btnB" class="btn">B</div>
   </div>
   <script src="main.js"></script>
-  <script>  <script>
+  <script> 
   // === ALL DOM ELEMENTS ===
   const romListEl = document.getElementById('romListEl');
   const uploadRomInputEl = document.getElementById('uploadRomInputEl');
@@ -104,14 +104,14 @@
   let currentRpgState = RPG_STATE.DIALOGUE;
 
   // === PLAYER ===
-  let player = { name:"Hero", lvl:1, xp:0, nextXp:50, hp:20, maxHp:20, mp:10, maxMp:10, atk:3, def:2, gold:30, status:null, sprite:"1.jpg", evolvedSprite:"e_1.jpg",
-    moves:[{name:"Power Slash", dmg:5, cost:0, effect:null},{name:"Fireball", dmg:8, cost:2, effect:null},{name:"Heal", dmg:-10, cost:3, effect:null},{name:"Smite", dmg:12, cost:5, effect:null},{name:"Poison Dart", dmg:6, cost:4, effect:"poison"}],
+  let player = { name:"garuda", lvl:1, xp:0, nextXp:50, hp:20, maxHp:200, mp:10, maxMp:100, atk:3, def:2, gold:30, status:null, sprite:"1.jpg", evolvedSprite:"e_1.jpg",
+    moves:[{name:"melee", dmg:5, cost:0, effect:null},{name:"Fireball", dmg:8, cost:2, effect:null},{name:"Heal", dmg:-10, cost:1, effect:null},{name:"Smite", dmg:12, cost:2, effect:null},{name:"Poison Dart", dmg:6, cost:1, effect:"poison"}],
     inventory:[] };
 
   // === COMPANIONS WITH EQUIPMENT ===
   let companions = [
-    {id:1, name:"Warrior", atk:5, color:'#306f98', recruited:false, weapon:null, armor:null},
-    {id:2, name:"Mage", atk:4, color:'#a9364a', recruited:false, weapon:null, armor:null}
+    {id:1, name:"Mr.Charming", atk:5, color:'#306f98', recruited:false, weapon:null, armor:null},
+    {id:2, name:"", atk:4, color:'#a9364a', recruited:false, weapon:null, armor:null}
   ];
 
   let enemy = null;
