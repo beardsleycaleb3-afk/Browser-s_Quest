@@ -1,25 +1,19 @@
-// --- SULTAN 47 DBM CORE ---
-export class DBM {
-    constructor() {
-        this.acc = 0; 
-        this.buddyMatrix = new Uint8Array(256);
-        for (let n = 0; n < 256; n++) {
-            let rev = 0, v = n;
-            for (let i = 0; i < 8; i++) {
-                rev = (rev << 1) | (v & 1);
-                v >>= 1;
-            }
-            this.buddyMatrix[n] = rev;
-        }
-    }
-    toFixed(val) { return Math.floor(val * 256) & 0xFFFF; }
-    fromFixed(fp) { return (fp >> 8) + ((fp & 0xFF) / 256); }
-    
-    // Execute Sultan Glyph Strands
-    execute(strand) {
-        if (strand.includes('u')) this.acc = this.toFixed(this.buddyMatrix[10]);
-        if (strand.includes('+')) this.acc += this.toFixed(1);
-        return this.acc;
-    }
-}
-export const dbm = new DBM();
+// The Buddy System Sequencer: 101 (Left) + 102 (Center) + 101 (Right)
+export const DBM = {
+    // Symmetry Compression: Input a sequence, get the Equilibrium & Mirrored version
+    sequence: (str) => {
+        const center = str.length / 2;
+        const left = str;
+        const equilibrium = str.split('').reverse().join(''); // Reversed Mirror
+        const right = equilibrium.split('').map(char => {
+            // Bit-shift logic for characters A-Z, 1-9
+            if (/[a-zA-Z]/.test(char)) return String.fromCharCode(char.charCodeAt(0) + 1);
+            if (/[0-9]/.test(char)) return (parseInt(char) + 1) % 10;
+            return char;
+        }).join('');
+        return { left, equilibrium, right };
+    },
+
+    // Bit-Shift Sequencer for the "Diamond" nodes
+    shift: (val, step) => (val << step) | (val >> (32 - step))
+};
