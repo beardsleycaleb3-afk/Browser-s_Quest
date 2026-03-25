@@ -3,31 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon.png">
+    
     <title>SULTAN 47: DBM</title>
     <style>
-        :root { --neon: #0ff; --gold: #d4af37; --bg: #050505; }
+        :root { --neon: #0ff; --gold: #d4af37; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; background: #000; font-family: 'Courier New', monospace; overflow: hidden; color: #fff; }
-        #console { width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; background: #111; }
         
-        /* 3D RENDER TUBE */
-        #screen { width: 94vw; aspect-ratio: 1/1; background: var(--bg); border: 4px solid #333; position: relative; overflow: hidden; margin-top: 10px; box-shadow: inset 0 0 60px #000; }
-        canvas { width: 100%; height: 100%; image-rendering: pixelated; }
-
-        /* UI OVERLAYS */
-        #hud { position: absolute; top: 10px; left: 10px; width: calc(100% - 20px); display: flex; justify-content: space-between; font-size: 12px; color: var(--neon); z-index: 10; }
-        #xp-bar { position: absolute; bottom: 0; left: 0; height: 4px; background: var(--neon); width: 0%; transition: 0.3s; }
+        /* THE CONSOLE BOX */
+        #console { width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; background: #111; padding-bottom: env(safe-area-inset-bottom); }
         
-        #menu { position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 30px; }
-        .m-btn { background: #111; border: 2px solid var(--neon); color: var(--neon); padding: 15px; margin: 8px; width: 100%; border-radius: 4px; font-weight: bold; font-size: 14px; }
+        /* RENDER SCREEN WITH IMAGE OVERLAY */
+        #screen { 
+            width: 94vw; aspect-ratio: 1/1; 
+            border: 4px solid #333; position: relative; overflow: hidden; 
+            background-size: cover; background-position: center;
+            transition: background-image 1s ease-in-out;
+        }
+        canvas { width: 100%; height: 100%; image-rendering: pixelated; position: absolute; top: 0; left: 0; z-index: 2; }
+        
+        /* LOADING SCREEN */
+        #loader { position: absolute; inset: 0; background: #000; z-index: 1000; display: flex; align-items: center; justify-content: center; transition: opacity 0.5; }
 
-        /* INPUT SYSTEM */
-        #ctrl { width: 100%; height: 40%; display: grid; grid-template-columns: 1fr 1fr; padding: 20px; background: #1a1a1a; }
+        /* HUD */
+        #hud { position: absolute; top: 10px; left: 10px; width: calc(100% - 20px); display: flex; justify-content: space-between; font-size: 12px; color: var(--neon); z-index: 10; text-shadow: 2px 2px #000; }
+        #xp-bar { position: absolute; bottom: 0; left: 0; height: 4px; background: var(--neon); width: 0%; z-index: 11; }
+
+        /* CONTROLS */
+        #ctrl { width: 100%; height: 40%; display: grid; grid-template-columns: 1fr 1fr; padding: 20px; background: #1a1a1a; border-top: 2px solid #333; }
         .dpad { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(3, 60px); }
-        .btn { background: #222; border: 1px solid #444; color: #777; display: flex; align-items: center; justify-content: center; font-size: 24px; border-radius: 10px; box-shadow: 0 4px #000; }
-        .btn:active { transform: translateY(2px); box-shadow: 0 2px #000; color: #fff; border-color: var(--neon); }
-
+        .btn { background: #222; border: 1px solid #444; color: #777; display: flex; align-items: center; justify-content: center; font-size: 24px; border-radius: 10px; }
+        .btn:active { background: #333; color: #fff; }
         .actions { display: flex; justify-content: flex-end; align-items: center; gap: 15px; }
         .circ { width: 85px; height: 85px; border-radius: 50%; border: none; color: #fff; font-weight: bold; box-shadow: 0 5px #000; }
         .btn-a { background: #006844; } .btn-b { background: #900; }
@@ -35,20 +46,18 @@
 </head>
 <body>
 
+<div id="loader">
+    <h2 style="color:var(--gold)">LOADING SULTAN 47...</h2>
+</div>
+
 <div id="console">
-    <div id="screen">
+    <div id="screen" id="render-target">
         <div id="hud">
-            <div>LVL <span id="ui-lvl">1</span> | <span id="ui-loc">SANDLOT</span></div>
+            <div>LVL <span id="ui-lvl">1</span> | <span id="ui-loc">LOADING</span></div>
             <div>YDS: <span id="ui-yds">0</span></div>
         </div>
         <canvas id="cvs" width="400" height="400"></canvas>
-        <div id="xp-bar" id="ui-xp"></div>
-
-        <div id="menu">
-            <h2 id="menu-title" style="color:var(--gold)">LOCKER ROOM</h2>
-            <div id="menu-content" style="width:100%"></div>
-            <button class="m-btn" style="border-color:gray; color:gray" onclick="Engine.closeMenu()">BACK TO FIELD</button>
-        </div>
+        <div id="xp-bar"></div>
     </div>
 
     <div id="ctrl">
@@ -59,144 +68,98 @@
             <div class="btn" style="grid-row:3;grid-column:2" ontouchstart="Engine.k('D',1)" ontouchend="Engine.k('D',0)">▼</div>
         </div>
         <div class="actions">
-            <button class="circ btn-b" ontouchstart="Engine.k('B',1)" ontouchend="Engine.k('B',0)">DIVE</button>
-            <button class="circ btn-a" ontouchstart="Engine.k('A',1)" ontouchend="Engine.k('A',0)">BOOST</button>
+            <button class="circ btn-b" onclick="Engine.audioInit()" ontouchstart="Engine.k('B',1)" ontouchend="Engine.k('B',0)">DIVE</button>
+            <button class="circ btn-a" onclick="Engine.audioInit()" ontouchstart="Engine.k('A',1)" ontouchend="Engine.k('A',0)">BOOST</button>
         </div>
     </div>
 </div>
 
 <script>
 const Engine = {
-    // SYMMETRY SEQUENCER {(101+102+101)}
-    sequence(pattern) {
-        let left = pattern;
-        let eq = pattern.split('').reverse().join('');
-        let right = eq.split('').map(c => {
-            if(/[a-z]/.test(c)) return String.fromCharCode(((c.charCodeAt(0)-97+1)%26)+97);
-            if(/[0-9]/.test(c)) return (parseInt(c)%9)+1;
-            return c;
-        }).join('');
-        return { left, eq, right };
+    // 1. DBM SYMMETRY {(101+102+101)}
+    sequence(p) {
+        let l = p, eq = p.split('').reverse().join('');
+        let r = eq.split('').map(c => /[a-z]/.test(c) ? String.fromCharCode(((c.charCodeAt(0)-97+1)%26)+97) : (/[1-9]/.test(c) ? (parseInt(c)%9)+1 : c)).join('');
+        return { l, eq, r };
     },
 
-    save: JSON.parse(localStorage.getItem('S47_DATA')) || {
-        lvl: 1, xp: 0, bits: 0, arch: null,
-        upgrades: { cleats: 1, armor: 1 }
-    },
-
-    p: { z: 0, lane: 1, depth: 320, boost: 0, keys: {}, dive: 0, scene: 'SANDLOT' },
+    save: JSON.parse(localStorage.getItem('S47_DATA')) || { lvl: 1, xp: 0, bits: 0, currentBG: 1 },
+    p: { z: 0, lane: 1, depth: 320, boost: 0, keys: {}, dive: 0, scene: '1' },
+    audioContext: null,
 
     init() {
         this.ctx = document.getElementById('cvs').getContext('2d');
+        this.screen = document.getElementById('screen');
+        this.loadAssets();
         this.loop();
-        if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+        
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').then(() => console.log("SW Active"));
+        }
+    },
+
+    // Audio touch-to-activate (Browser Security)
+    audioInit() {
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            console.log("Audio Engine Symmetrical Link Established");
+        }
+    },
+
+    loadAssets() {
+        // Procedural BG Map
+        this.updateBG(this.save.currentBG);
+        setTimeout(() => document.getElementById('loader').style.opacity = 0, 1500);
+    },
+
+    updateBG(num) {
+        this.screen.style.backgroundImage = `url('assets/bg/${num}.jpg')`;
     },
 
     k(key, val) { this.p.keys[key] = val; },
 
-    persist() { localStorage.setItem('S47_DATA', JSON.stringify(this.save)); },
-
-    openLocker() {
-        const m = document.getElementById('menu');
-        const c = document.getElementById('menu-content');
-        m.style.display = 'flex';
-        c.innerHTML = `
-            <button class="m-btn" onclick="Engine.buy('cleats')">UPGRADE CLEATS (${this.save.upgrades.cleats * 50} BITS)</button>
-            <button class="m-btn" onclick="Engine.buy('armor')">UPGRADE ARMOR (${this.save.upgrades.armor * 50} BITS)</button>
-        `;
-    },
-
-    buy(item) {
-        let cost = this.save.upgrades[item] * 50;
-        if(this.save.bits >= cost) {
-            this.save.bits -= cost;
-            this.save.upgrades[item]++;
-            this.persist();
-            this.openLocker();
-        }
-    },
-
-    closeMenu() { document.getElementById('menu').style.display = 'none'; },
-
     update() {
-        // Boost & XP Logic
+        // Leveling & Map Logic
+        let yds = this.p.z / 10;
+        let newScene = Math.floor(yds / 1000) + 1;
+        if(newScene > 10) newScene = 10;
+        
+        if(newScene != this.p.scene) {
+            this.p.scene = newScene;
+            this.updateBG(newScene);
+        }
+
+        // Boost & XP
         if(this.p.keys['A']) {
             this.p.boost = Math.min(10 + this.save.lvl, this.p.boost + 0.4);
-            this.save.xp += (this.save.arch === 'analyst' ? 0.5 : 0.2);
+            this.save.xp += 0.2;
         } else {
-            this.p.boost = Math.max(0, this.p.boost - 0.6);
+            this.p.boost = Math.max(0, this.p.boost - 0.5);
         }
-
-        // Symmetry Lane Movement
-        let turn = 0.05 + (this.save.upgrades.cleats * 0.02);
-        if(this.p.keys['L'] && this.p.lane > 0) this.p.lane -= turn;
-        if(this.p.keys['R'] && this.p.lane < 2) this.p.lane += turn;
-        if(this.p.keys['U'] && this.p.depth > 200) this.p.depth -= 2;
-        if(this.p.keys['D'] && this.p.depth < 380) this.p.depth += 2;
-
-        if(this.p.keys['B'] && this.p.dive <= 0) this.p.dive = 25;
-        if(this.p.dive > 0) this.p.dive--;
 
         this.p.z += this.p.boost;
-
-        // Level Up & Arch
-        if(this.save.xp >= this.save.lvl * 100) { 
-            this.save.lvl++; this.save.xp = 0; 
-            if(this.save.lvl === 10) this.openLocker(); // Trigger Arch Choice
-            this.persist(); 
-        }
-
-        // Scene Scaling
-        let y = this.p.z / 10;
-        if(y < 500) this.p.scene = 'SANDLOT';
-        else if(y < 2000) this.p.scene = 'WOODS';
-        else if(y < 5000) this.p.scene = 'STADIUM';
-        else this.p.scene = 'SUPERBOWL';
+        
+        // Lane Movement
+        if(this.p.keys['L'] && this.p.lane > 0) this.p.lane -= 0.08;
+        if(this.p.keys['R'] && this.p.lane < 2) this.p.lane += 0.08;
     },
 
     draw() {
-        const { ctx, p, save } = this;
-        ctx.fillStyle = (p.scene === 'WOODS') ? '#0a1505' : (p.scene === 'STADIUM' ? '#050a20' : '#051505');
-        ctx.fillRect(0, 0, 400, 400);
+        const { ctx, p } = this;
+        ctx.clearRect(0,0,400,400);
 
-        // Grid
-        ctx.strokeStyle = 'rgba(0,255,255,0.15)';
-        for(let i=-6; i<7; i++) {
-            ctx.beginPath();
-            ctx.moveTo(200 + i*10, 150); ctx.lineTo(200 + i*300, 400);
-            ctx.stroke();
-        }
-
-        // Defenders via Symmetry Sequencer
-        for(let i=0; i<4; i++) {
-            let dZ = (Math.floor(p.z/800)+i)*800+800;
-            let relZ = dZ - p.z;
-            let lane = (Math.floor(dZ/800)*131)%3;
-            if(relZ > 0) {
-                let s = 200/(200+relZ);
-                let seq = this.sequence("oO001");
-                ctx.fillStyle = '#f22';
-                ctx.font = (20*s)+"px monospace";
-                ctx.fillText(seq.left+seq.eq+seq.right, 200+(lane-1)*200*s - 30*s, 150+250*s);
-                
-                // Collision
-                if(relZ < 40 && Math.abs(lane - p.lane) < 0.4 && p.dive <= 0) {
-                    this.save.bits += Math.floor(p.z/100);
-                    p.z = 0; p.boost = 0; this.persist();
-                }
-            }
-        }
-
-        // Player
-        let pSeq = this.sequence("oO010");
-        ctx.fillStyle = p.dive > 0 ? '#fff' : '#0ff';
-        ctx.fillText(pSeq.eq, 200+(p.lane-1)*130, p.depth + (p.dive>0?20:0));
+        // Render Symmetrical DBM Player Node
+        let seq = this.sequence("oO010");
+        ctx.fillStyle = p.keys['B'] ? '#fff' : '#0ff';
+        ctx.font = "24px monospace";
+        ctx.fillText(seq.eq, 200 + (p.lane - 1) * 150 - 20, p.depth);
 
         // HUD
-        document.getElementById('ui-lvl').innerText = save.lvl;
+        document.getElementById('ui-lvl').innerText = this.save.lvl;
         document.getElementById('ui-yds').innerText = Math.floor(p.z/10);
-        document.getElementById('ui-loc').innerText = p.scene;
-        document.getElementById('xp-bar').style.width = (save.xp/(save.lvl*100))*100 + '%';
+        document.getElementById('ui-loc').innerText = `ZONE ${p.scene}`;
+        document.getElementById('xp-bar').style.width = (this.save.xp % 100) + '%';
     },
 
     loop() {
@@ -205,7 +168,8 @@ const Engine = {
         requestAnimationFrame(() => this.loop());
     }
 };
-Engine.init();
+
+window.onload = () => Engine.init();
 </script>
 </body>
 </html>
