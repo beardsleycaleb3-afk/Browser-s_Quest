@@ -1,0 +1,11 @@
+{
+  "name": "Sultan 47: DBM",
+  "short_name": "S47",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#d4af37",
+  "icons": [
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
