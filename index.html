@@ -2,116 +2,207 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sultan 47: Equilibrium</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Sultan 47: Road to the Bowl</title>
     <style>
-        :root { --case: #1a1a1a; --neon: #0ff; }
-        body { margin: 0; background: #000; font-family: monospace; overflow: hidden; touch-action: none; color: white; }
-        #console { width: 100vw; height: 100vh; background: var(--case); display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; }
-        #screen { width: 92vw; aspect-ratio: 1/1; border: 4px solid #333; position: relative; overflow: hidden; background: #050505; }
+        :root { --case: #121212; --neon: #0ff; --gold: #d4af37; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        body { margin: 0; background: #000; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; color: #fff; }
+        
+        /* THE CONSOLE BOX */
+        #console { width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; background: var(--case); padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0; }
+        
+        /* 3D CRT SCREEN */
+        #screen-box { width: 92vw; aspect-ratio: 1/1; background: #051005; border: 6px solid #222; border-radius: 15px; position: relative; overflow: hidden; box-shadow: inset 0 0 50px #000; }
         canvas { width: 100%; height: 100%; image-rendering: pixelated; }
-        #ctrl { width: 95vw; height: 35vh; display: grid; grid-template-columns: 1fr 1fr; }
-        .dpad { display: grid; grid-template-columns: repeat(3, 55px); grid-template-rows: repeat(3, 55px); }
-        .d-btn { background: #1a1a1a; border: 2px solid #333; color: #555; display: flex; align-items: center; justify-content: center; font-size: 24px; }
-        .btns { display: flex; justify-content: flex-end; gap: 15px; align-items: center; }
-        .circle { width: 85px; height: 85px; border-radius: 50%; border: none; color: white; font-weight: bold; font-size: 20px; box-shadow: 0 6px #000; }
+
+        /* HUD & RPG OVERLAYS */
+        #hud { position: absolute; top: 12px; left: 12px; width: calc(100% - 24px); pointer-events: none; z-index: 5; display: flex; justify-content: space-between; font-size: 10px; color: var(--neon); text-transform: uppercase; }
+        #xp-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: #111; }
+        #xp-fill { height: 100%; background: var(--neon); width: 0%; transition: width 0.4s; }
+        
+        /* MENUS */
+        #menu-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .btn-menu { background: #1a1a1a; border: 2px solid var(--neon); color: var(--neon); padding: 15px; margin: 10px; width: 100%; border-radius: 5px; font-weight: bold; }
+
+        /* PHYSICAL CONTROLLER */
+        #controls { width: 100%; height: 40%; display: grid; grid-template-columns: 1fr 1fr; align-items: center; padding: 0 20px; }
+        .dpad { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(3, 60px); }
+        .d-btn { background: #222; border: 1px solid #444; color: #888; display: flex; align-items: center; justify-content: center; font-size: 24px; border-radius: 8px; box-shadow: 0 4px #000; }
+        .d-btn:active { transform: translateY(2px); box-shadow: 0 2px #000; color: #fff; }
+
+        .actions { display: flex; justify-content: flex-end; gap: 20px; }
+        .circle { width: 85px; height: 85px; border-radius: 50%; border: none; color: #fff; font-size: 18px; font-weight: bold; box-shadow: 0 6px #000; }
+        .circle:active { transform: translateY(4px); box-shadow: 0 2px #000; }
+        .btn-a { background: #006644; } .btn-b { background: #880000; }
     </style>
 </head>
 <body>
 
 <div id="console">
-    <div id="screen">
-        <canvas id="gameCanvas" width="300" height="300"></canvas>
-    </div>
-    <div id="ctrl">
-        <div class="dpad">
-            <div class="d-btn" style="grid-column:2" ontouchstart="k('UP',1)" ontouchend="k('UP',0)">▲</div>
-            <div class="d-btn" style="grid-row:2;grid-column:1" ontouchstart="k('LEFT',1)" ontouchend="k('LEFT',0)">◀</div>
-            <div class="d-btn" style="grid-row:2;grid-column:3" ontouchstart="k('RIGHT',1)" ontouchend="k('RIGHT',0)">▶</div>
-            <div class="d-btn" style="grid-row:3;grid-column:2" ontouchstart="k('DOWN',1)" ontouchend="k('DOWN',0)">▼</div>
+    <div id="screen-box">
+        <div id="hud">
+            <div>LVL <span id="lvl">1</span> | <span id="loc">PRACTICE</span></div>
+            <div>YARDS: <span id="yds">0</span></div>
         </div>
-        <div class="btns">
-            <button class="circle" style="background:#800" ontouchstart="k('B',1)" ontouchend="k('B',0)">DIVE</button>
-            <button class="circle" style="background:#064" ontouchstart="k('A',1)" ontouchend="k('A',0)">BOOST</button>
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <div id="xp-container"><div id="xp-fill"></div></div>
+
+        <div id="menu-overlay">
+            <h2 style="color:var(--gold)">CHOOSE ARCHETYPE</h2>
+            <button class="btn-menu" onclick="Game.setArch('tank')">TANK (BREAK TACKLES)</button>
+            <button class="btn-menu" onclick="Game.setArch('ghost')">GHOST (SLIM HITBOX)</button>
+            <button class="btn-menu" onclick="Game.setArch('analyst')">ANALYST (DOUBLE XP)</button>
+        </div>
+    </div>
+
+    <div id="controls">
+        <div class="dpad">
+            <div class="d-btn" style="grid-column:2" ontouchstart="Game.key('U',1)" ontouchend="Game.key('U',0)">▲</div>
+            <div class="d-btn" style="grid-row:2;grid-column:1" ontouchstart="Game.key('L',1)" ontouchend="Game.key('L',0)">◀</div>
+            <div class="d-btn" style="grid-row:2;grid-column:3" ontouchstart="Game.key('R',1)" ontouchend="Game.key('R',0)">▶</div>
+            <div class="d-btn" style="grid-row:3;grid-column:2" ontouchstart="Game.key('D',1)" ontouchend="Game.key('D',0)">▼</div>
+        </div>
+        <div class="actions">
+            <button class="circle btn-b" ontouchstart="Game.key('B',1)" ontouchend="Game.key('B',0)">DIVE</button>
+            <button class="circle btn-a" ontouchstart="Game.key('A',1)" ontouchend="Game.key('A',0)">BOOST</button>
         </div>
     </div>
 </div>
 
 <script>
-const cvs = document.getElementById('gameCanvas');
-const ctx = cvs.getContext('2d');
-
-// --- SYMMETRY COMPRESSION ENGINE (101 + 102 + 101) ---
-const BuddySystem = {
-    // Generates Symmetrical + Equilibrium + Mirrored Right Side
-    sequencer: (pattern) => {
+// --- THE SULTAN 47 CORE ENGINE ---
+const Game = {
+    // 1. DBM Buddy System & Symmetry Compression
+    Sequencer: (pattern) => {
         let left = pattern;
         let equilibrium = pattern.split('').reverse().join('');
         let right = equilibrium.split('').map(c => {
-            if(/[a-z]/.test(c)) return String.fromCharCode(((c.charCodeAt(0) - 97 + 1) % 26) + 97);
-            if(/[1-9]/.test(c)) return (parseInt(c) % 9) + 1;
+            if(/[a-z]/.test(c)) return String.fromCharCode(((c.charCodeAt(0)-97+1)%26)+97);
+            if(/[0-9]/.test(c)) return (parseInt(c)%9)+1;
             return c;
         }).join('');
-        return { left, equilibrium, right };
+        return { left, eq: equilibrium, right };
+    },
+
+    // 2. Persistent RPG Data
+    save: JSON.parse(localStorage.getItem('SultanDBM_v2')) || {
+        lvl: 1, xp: 0, bits: 0, arch: null, best: 0,
+        gear: { armor: 0, cleats: 0 }
+    },
+
+    // 3. Live State
+    p: { z: 0, lane: 1, depth: 320, boost: 0, keys: {}, dive: 0, scene: 'PRACTICE' },
+    defs: [],
+
+    init() {
+        this.cvs = document.getElementById('gameCanvas');
+        this.ctx = this.cvs.getContext('2d');
+        this.loop();
+    },
+
+    key(k, v) { this.p.keys[k] = v; },
+
+    setArch(type) {
+        this.save.arch = type;
+        document.getElementById('menu-overlay').style.display = 'none';
+        this.persist();
+    },
+
+    persist() { localStorage.setItem('SultanDBM_v2', JSON.stringify(this.save)); },
+
+    update() {
+        // Physics & Leveling
+        if(this.p.keys['A']) {
+            this.p.boost = Math.min(12 + this.save.lvl, this.p.boost + 0.4);
+            this.save.xp += (this.save.arch === 'analyst' ? 0.4 : 0.2);
+        } else {
+            this.p.boost = Math.max(0, this.p.boost - 0.5);
+        }
+
+        if(this.save.xp >= this.save.lvl * 100) { this.save.lvl++; this.save.xp = 0; this.persist(); }
+        if(this.save.lvl >= 10 && !this.save.arch) document.getElementById('menu-overlay').style.display = 'flex';
+
+        // Movement (Symmetry-Modified)
+        let turn = this.save.arch === 'ghost' ? 0.12 : 0.08;
+        if(this.p.keys['L'] && this.p.lane > 0) this.p.lane -= turn;
+        if(this.p.keys['R'] && this.p.lane < 2) this.p.lane += turn;
+        if(this.p.keys['U'] && this.p.depth > 200) this.p.depth -= 3;
+        if(this.p.keys['D'] && this.p.depth < 380) this.p.depth += 3;
+
+        if(this.p.keys['B'] && this.p.dive <= 0) this.p.dive = 20;
+        if(this.p.dive > 0) this.p.dive--;
+
+        this.p.z += this.p.boost;
+
+        // Scene Logic
+        let yds = this.p.z / 10;
+        if(yds < 500) this.p.scene = 'PRACTICE';
+        else if(yds < 1500) this.p.scene = 'WOODS';
+        else if(yds < 5000) this.p.scene = 'STADIUM';
+        else this.p.scene = 'SUPERBOWL';
+    },
+
+    draw() {
+        const { ctx, cvs, p, save } = this;
+        ctx.fillStyle = this.p.scene === 'WOODS' ? '#1a1005' : '#051505';
+        ctx.fillRect(0, 0, 400, 400);
+
+        // 3D Perspective Grid
+        ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
+        for(let i=-5; i<6; i++) {
+            ctx.beginPath();
+            ctx.moveTo(200 + i*15, 150); ctx.lineTo(200 + i*250, 400);
+            ctx.stroke();
+        }
+
+        // Defenders (Symmetrical Alphanumeric Nodes)
+        for(let i=0; i<4; i++) {
+            let dZ = (Math.floor(p.z / 600) + i) * 600 + 600;
+            let relZ = dZ - p.z;
+            let lane = (Math.floor(dZ/600) * 131) % 3;
+            
+            if(relZ > 0 && relZ < 2000) {
+                let s = 200 / (200 + relZ);
+                let seq = this.Sequencer("oO001");
+                let dx = 200 + (lane - 1) * (180 * s);
+                let dy = 150 + (250 * s);
+                
+                ctx.fillStyle = '#f00';
+                ctx.font = (16 * s) + "px monospace";
+                ctx.fillText(seq.left + seq.eq + seq.right, dx - (30*s), dy);
+
+                // Collision
+                let hitbox = save.arch === 'ghost' ? 0.25 : 0.45;
+                if(relZ < 30 && Math.abs(lane - p.lane) < hitbox && p.dive <= 0) {
+                    p.z = 0; p.boost = 0; // Reset Run
+                }
+            }
+        }
+
+        // Player Node
+        let pSeq = this.Sequencer("oO00110");
+        ctx.fillStyle = p.dive > 0 ? '#fff' : '#0ff';
+        let px = 200 + (p.lane - 1) * 120;
+        ctx.font = "20px monospace";
+        ctx.fillText(pSeq.eq, px - 20, p.depth + (p.dive > 0 ? 20 : 0));
+
+        // HUD Update
+        document.getElementById('lvl').innerText = save.lvl;
+        document.getElementById('yds').innerText = Math.floor(p.z / 10);
+        document.getElementById('loc').innerText = p.scene;
+        document.getElementById('xp-fill').style.width = (save.xp / (save.lvl*100))*100 + '%';
+    },
+
+    loop() {
+        this.update();
+        this.draw();
+        requestAnimationFrame(() => this.loop());
     }
 };
 
-// Patterns for your 3D Nodes
-const DIAMOND = "oO0011001";
-const PLAYER_SPRITE = "oO001";
-
-let p = { z: 0, lane: 1, depth: 240, boost: 0, keys: {}, dive: 0 };
-
-function k(key, val) { p.keys[key] = val; }
-
-function loop() {
-    // 1. PHYSICS
-    if (p.keys['A']) p.boost = Math.min(15, p.boost + 0.5);
-    else p.boost = Math.max(0, p.boost - 0.4);
-
-    if (p.keys['LEFT'] && p.lane > 0) p.lane -= 0.1;
-    if (p.keys['RIGHT'] && p.lane < 2) p.lane += 0.1;
-    if (p.keys['UP'] && p.depth > 160) p.depth -= 2;
-    if (p.keys['DOWN'] && p.depth < 280) p.depth += 2;
-    
-    if (p.keys['B'] && p.dive <= 0) p.dive = 20;
-    if (p.dive > 0) p.dive--;
-
-    p.z += p.boost;
-
-    // 2. RENDERING (Symmetry Buddy System)
-    ctx.fillStyle = '#000'; ctx.fillRect(0,0,300,300);
-
-    // Render Defenders as Alphanumeric Sequences
-    for(let i=0; i<3; i++) {
-        let dZ = (Math.floor(p.z / 500) + i) * 500 + 500;
-        let relZ = dZ - p.z;
-        if(relZ > 0) {
-            let s = 150 / (150 + relZ);
-            let seq = BuddySystem.sequencer(DIAMOND);
-            ctx.fillStyle = '#f00';
-            ctx.font = (12 * s) + "px monospace";
-            
-            let dx = 150 + (( (Math.floor(dZ/500)*131)%3 ) - 1) * (140 * s);
-            let dy = 100 + (180 * s);
-            
-            // Draw Symmetrical Triple-Node
-            ctx.fillText(seq.left, dx - (20*s), dy);
-            ctx.fillText(seq.equilibrium, dx, dy);
-            ctx.fillText(seq.right, dx + (20*s), dy);
-        }
-    }
-
-    // Render Player Node
-    let playerSeq = BuddySystem.sequencer(PLAYER_SPRITE);
-    ctx.fillStyle = p.dive > 0 ? '#fff' : '#0ff';
-    let px = 150 + (p.lane - 1) * 95;
-    ctx.font = "16px monospace";
-    ctx.fillText(playerSeq.equilibrium, px - 15, p.depth + (p.dive > 0 ? 15 : 0));
-
-    requestAnimationFrame(loop);
-}
-loop();
+window.onload = () => Game.init();
 </script>
 </body>
 </html>
