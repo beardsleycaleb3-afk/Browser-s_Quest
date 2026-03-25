@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#9bbc0f">
+  <title>Sultan Console</title>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    * { margin:0; padding:0; touch-action:none; box-sizing:border-box; user-select:none; -webkit-user-select:none; }
+    body { 
+      background:#050505; 
+      display:flex; 
+      flex-direction:column; 
+      align-items:center; 
+      justify-content:center; 
+      height:100vh; 
+      font-family:'Courier New', Courier, monospace; 
+      color: #ddd;
+      overflow: hidden;
+    }
+
+    /* DEVICE CHASSIS */
+    #deviceCtn {
+      display:flex; flex-direction:column; align-items:center; position:relative;
+    }
+
+    #screen { 
+      width:340px; height:340px; 
+      background:linear-gradient(145deg, #c0c0c0, #8a8a8a); 
+      border-radius:20px; 
+      padding:12px; 
+      box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 2px 5px rgba(255,255,255,0.5); 
+      position: relative;
+      z-index: 1;
+      margin-bottom: 15px;
+    }
+    
+    .screen-bezel {
+      position: absolute; inset: 12px;
+      background: #000;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: inset 0 0 30px rgba(0,0,0,1);
+      z-index: 2;
+    }
+    canvas { 
+      width:300px; height:300px; 
+      image-rendering:pixelated; 
+      display:block;
+      z-index: 3;
+    }
+    
+    /* FX LAYERS */
+    #scanlines {
+      position: absolute; top:0; left:0; width:100%; height:100%;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                  linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+      background-size: 100% 4px, 6px 100%;
+      pointer-events: none; z-index: 10;
+    }
+    
+    #vignette {
+      position: absolute; inset:0;
+      background: radial-gradient(circle, rgba(0,0,0,0) 50%, rgba(0,0,0,0.8) 100%);
+      pointer-events: none; z-index: 11;
+    }
+
+    #fxOverlay {
+      position: absolute; inset:0; pointer-events: none; z-index: 12; 
+      mix-blend-mode: hard-light; transition: background 0.1s;
+    }
+
+    /* UI */
+    .ui-layer {
+      position: absolute; border-radius: 4px; pointer-events: none;
+      backdrop-filter: blur(1px); z-index: 5; text-shadow: 1px 1px 0 #000;
+    }
+    
+    #textOutputEl {
+      bottom: 25px; left: 25px; right: 25px;
+      background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.3);
+      border-bottom: 3px solid rgba(255,255,255,0.5);
+      padding: 8px; font-size: 12px; min-height: 40px; color: #fff;
+      display: none; font-weight: bold; opacity: 0; transition: opacity 0.2s;
+    }
+    
+    #playerStatsEl, #enemyStatsEl {
+      top: 15px; font-size: 10px; font-weight: bold; 
+      background: rgba(0,0,0,0.6); padding: 4px 6px; 
+      border-radius: 4px; border: 1px solid rgba(255,255,255,0.2);
+      color: #0f0; pointer-events: none; z-index: 5;
+    }
+    #playerStatsEl { left: 25px; }
+    #enemyStatsEl { right: 25px; text-align: right; display: none; color: #f55; }
+
+    /* ROM SELECTOR */
+    #romSelectorEl {
+      width: 340px; max-height: 340px; overflow-y: auto;
+      background: #111; padding: 15px; border-radius: 15px;
+      border: 2px solid #444; display: flex; flex-direction: column; gap: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .rom-slot { 
+      padding: 10px; background: #222; cursor: pointer; border-radius: 4px; 
+      opacity: 0.6; transition: 0.2s; border: 1px solid #333; 
+    }
+    .rom-slot:hover { opacity: 1; background: #333; }
+    .rom-slot.active { background: #0f380f; color: #9bbc0f; opacity: 1; font-weight: bold; border-color: #9bbc0f; }
+
+    /* CONTROLS - Mobile optimized */
+    #controls { 
+      width:100%; max-width:380px; height:160px; 
+      background:#b0b0b0; border-radius:0 0 40px 40px; 
+      display:flex; justify-content:space-between; align-items:center; 
+      padding:20px 40px; box-shadow: inset 0 -8px 20px rgba(0,0,0,0.3), 0 10px 20px rgba(0,0,0,0.5); 
+      margin-top: -15px; z-index: 2; position: relative;
+    }
+    .btn { 
+      width:65px; height:65px; border-radius:50%; border:3px solid #555; 
+      background:#444; color:#ccc; font-size:28px; font-weight:bold; 
+      display:flex; align-items:center; justify-content:center; 
+      box-shadow: 0 6px 15px rgba(0,0,0,0.4); touch-action:manipulation; transition: transform 0.1s;
+    }
+    .btn:active { background:#222; transform:scale(0.95) translateY(2px); box-shadow: inset 0 2px 8px rgba(0,0,0,0.5); }
+    #btnAEl { background:#c22; border-color:#a11; color:white; box-shadow: 0 6px 15px rgba(200, 50, 50, 0.4); }
+    #btnBEl { background:#a44; border-color:#822; color:white; box-shadow: 0 6px 15px rgba(150, 50, 50, 0.4); }
+    
+    #dpadCtn { position: relative; width: 140px; height: 90px; display: flex; align-items: center; justify-content: center; }
+    #dpadUpEl, #dpadDownEl, #dpadLeftEl, #dpadRightEl { 
+      position: absolute; background:#333; width: 45px; height: 45px; font-size: 20px; 
+      border:2px solid #555; border-radius: 8px; 
+    }
+    #dpadUpEl { top: 0; } 
+    #dpadDownEl { bottom: 0; }
+    #dpadLeftEl { left: 0; } 
+    #dpadRightEl { right: 0; }
+    #dpadCenter { width: 45px; height: 45px; background: #333; border-radius: 10px; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
+  </style>
+</head>
+<body>
+  
+  <div id="deviceCtn">
+    <!-- ROM SELECTOR -->
+    <div id="romSelectorEl">
+      <h3 style="text-align:center; color:#9bbc0f; font-family:'Courier New'; text-transform: uppercase; letter-spacing: 2px;">SELECT CARTRIDGE</h3>
+      <input type="file" id="uploadRomInputEl" accept=".zip,.json" style="background:#222; color:#888; border:1px solid #444; padding:5px; width:100%; box-sizing:border-box; font-size:10px;">
+      <div id="romListEl" style="display:flex; flex-direction:column; gap:5px;"></div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="gameUIEl" hidden>
+      <div id="screen">
+        <div class="screen-bezel">
+          <canvas id="gameCanvas" width="300" height="300"></canvas>
+          <div id="scanlines"></div>
+          <div id="vignette"></div>
+          <div id="fxOverlay"></div>
+          <div id="playerStatsEl" class="ui-layer"></div>
+          <div id="enemyStatsEl" class="ui-layer"></div>
+          <div id="textOutputEl" class="ui-layer"></div>
+        </div>
+      </div>
+      <div id="gameTitleEl" style="text-align:center; color:#666; margin-top:8px; font-size:12px; letter-spacing: 1px;"></div>
+    </div>
+
+    <!-- CONTROLS - Touch only -->
+    <div id="controls">
+      <div id="dpadCtn">
+        <div id="dpadUpEl" class="btn">▲</div>
+        <div id="dpadLeftEl" class="btn">◀</div>
+        <div id="dpadCenter"></div>
+        <div id="dpadRightEl" class="btn">▶</div>
+        <div id="dpadDownEl" class="btn">▼</div>
+      </div>
+      <div style="display:flex; gap:15px; align-items:flex-end; padding-bottom:10px;">
+        <div id="btnBEl" class="btn">B</div>
+        <div id="btnAEl" class="btn">A</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
